@@ -14,7 +14,7 @@ points = PoolVector2Array( 0, 8, 8, 4, 16, 8, 8, 12 )
 [sub_resource type="TileSet" id=1]
 0/name = "Grass"
 0/texture = ExtResource( 1 )
-0/tex_offset = Vector2( 0, -4 )
+0/tex_offset = Vector2( 0, 0 )
 0/modulate = Color( 1, 1, 1, 1 )
 0/region = Rect2( 0, 0, 16, 16 )
 0/tile_mode = 0
@@ -28,7 +28,7 @@ points = PoolVector2Array( 0, 8, 8, 4, 16, 8, 8, 12 )
 0/z_index = 0
 1/name = "Lava"
 1/texture = ExtResource( 2 )
-1/tex_offset = Vector2( 0, -4 )
+1/tex_offset = Vector2( 0, 0 )
 1/modulate = Color( 1, 1, 1, 1 )
 1/region = Rect2( 0, 0, 16, 16 )
 1/tile_mode = 0
@@ -55,22 +55,22 @@ script = ExtResource( 4 )
 mode = 1
 tile_set = SubResource( 1 )
 cell_size = Vector2( 16, 8 )
-cell_tile_origin = 1
 cell_y_sort = true
 show_collision = true
+centered_textures = true
 format = 1
 tile_data = PoolIntArray( -196612, 0, 0, -196611, 0, 0, -196610, 0, 0, -196609, 0, 0, -262144, 0, 0, -262143, 0, 0, -262142, 0, 0, -262141, 0, 0, -131076, 0, 0, -131075, 0, 0, -131074, 0, 0, -131073, 0, 0, -196608, 0, 0, -196607, 0, 0, -196606, 0, 0, -196605, 0, 0, -65540, 0, 0, -65539, 0, 0, -65538, 0, 0, -65537, 0, 0, -131072, 0, 0, -131071, 0, 0, -131070, 0, 0, -131069, 0, 0, -4, 0, 0, -3, 0, 0, -2, 0, 0, -1, 0, 0, -65536, 0, 0, -65535, 0, 0, -65534, 0, 0, -65533, 0, 0, 65532, 0, 0, 65533, 0, 0, 65534, 0, 0, 65535, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0, 131068, 0, 0, 131069, 0, 0, 131070, 0, 0, 131071, 0, 0, 65536, 0, 0, 65537, 0, 0, 65538, 0, 0, 65539, 0, 0, 196604, 0, 0, 196605, 0, 0, 196606, 0, 0, 196607, 0, 0, 131072, 0, 0, 131073, 0, 0, 131074, 0, 0, 131075, 0, 0 )
 
 [node name="YSort" type="YSort" parent="Ground"]
 
 [node name="Dinosaur" parent="Ground/YSort" instance=ExtResource( 5 )]
+position = Vector2( -8, 0 )
 
 [node name="Dinosaur2" parent="Ground/YSort" instance=ExtResource( 5 )]
-position = Vector2( 40, 8 )
+position = Vector2( 32, 4 )
 
 [node name="Lava" parent="Ground/YSort" instance=ExtResource( 7 )]
 position = Vector2( 24, -8 )
-script = null
 
 [node name="Rock" parent="Ground/YSort" instance=ExtResource( 3 )]
 position = Vector2( 8, 8 )
@@ -95,3 +95,9 @@ texture = ExtResource( 6 )
 
 [node name="Lava2" parent="Ground/YSort" instance=ExtResource( 7 )]
 position = Vector2( -8, -8 )
+
+[node name="Dinosaur3" parent="Ground/YSort" instance=ExtResource( 5 )]
+position = Vector2( 0, -28 )
+
+[node name="Dinosaur4" parent="Ground/YSort" instance=ExtResource( 5 )]
+position = Vector2( 16, 4 )

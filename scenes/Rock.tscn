@@ -4,6 +4,7 @@
 
 [node name="Rock" type="Node2D" groups=["rocks"]]
 position = Vector2( -16, -4 )
+z_index = 1
 
 [node name="Sprite" type="Sprite" parent="."]
 texture = ExtResource( 1 )
