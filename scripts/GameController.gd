@@ -25,6 +25,7 @@ func _on_DebugStepTurn_pressed():
 	step_turn()
 
 func complete_level():
+	remove_child(current_level)
 	current_level.queue_free()
 	load_level(start_level)
 
