@@ -8,6 +8,16 @@
 
 config_version=4
 
+_global_script_classes=[ {
+"base": "Node2D",
+"class": "Level",
+"language": "GDScript",
+"path": "res://scripts/Level.gd"
+} ]
+_global_script_class_icons={
+"Level": ""
+}
+
 [application]
 
 config/name="Ludum Dare 54"
@@ -27,8 +37,8 @@ window/integer_resolution_handler/base_width=256
 window/integer_resolution_handler/base_height=144
 window/size/width=256
 window/size/height=144
-window/size/test_width=960
-window/size/test_height=540
+window/size/test_width=1920
+window/size/test_height=1080
 window/dpi/allow_hidpi=true
 window/stretch/mode="viewport"
 window/stretch/aspect="expand"
