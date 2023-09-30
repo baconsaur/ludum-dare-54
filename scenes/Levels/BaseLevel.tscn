@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=2]
+[gd_scene load_steps=9 format=2]
 
 [ext_resource path="res://sprites/ground.png" type="Texture" id=1]
+[ext_resource path="res://scenes/RockGroup.tscn" type="PackedScene" id=2]
 [ext_resource path="res://scenes/Rock.tscn" type="PackedScene" id=3]
 [ext_resource path="res://scripts/Level.gd" type="Script" id=4]
 [ext_resource path="res://scenes/Dinosaur.tscn" type="PackedScene" id=5]
@@ -38,29 +39,23 @@ tile_data = PoolIntArray( -196612, 0, 0, -196611, 0, 0, -196610, 0, 0, -196609, 
 
 [node name="YSort" type="YSort" parent="Ground"]
 
-[node name="Dinosaur" parent="Ground/YSort" instance=ExtResource( 5 )]
-position = Vector2( -8, -4 )
-
 [node name="Dinosaur2" parent="Ground/YSort" instance=ExtResource( 5 )]
 position = Vector2( 32, 0 )
+
+[node name="Dinosaur5" parent="Ground/YSort" instance=ExtResource( 5 )]
+position = Vector2( -8, -4 )
 
 [node name="Lava" parent="Ground/YSort" instance=ExtResource( 7 )]
 position = Vector2( 24, -12 )
 
-[node name="Rock" parent="Ground/YSort" instance=ExtResource( 3 )]
+[node name="RockGroup" parent="Ground/YSort" instance=ExtResource( 2 )]
 position = Vector2( 8, 4 )
 
-[node name="Rock2" parent="Ground/YSort" instance=ExtResource( 3 )]
-position = Vector2( 8, -12 )
+[node name="Rock2" parent="Ground/YSort/RockGroup" instance=ExtResource( 3 )]
+position = Vector2( -8, 4 )
 
-[node name="Rock3" parent="Ground/YSort" instance=ExtResource( 3 )]
-position = Vector2( 0, -24 )
-
-[node name="Rock4" parent="Ground/YSort" instance=ExtResource( 3 )]
-position = Vector2( 40, -4 )
-
-[node name="Rock5" parent="Ground/YSort" instance=ExtResource( 3 )]
-position = Vector2( -24, -4 )
+[node name="Rock3" parent="Ground/YSort/RockGroup" instance=ExtResource( 3 )]
+position = Vector2( 8, 4 )
 
 [node name="Exit" type="Node2D" parent="Ground/YSort"]
 position = Vector2( 8, 12 )
@@ -76,3 +71,30 @@ position = Vector2( 0, -32 )
 
 [node name="Dinosaur4" parent="Ground/YSort" instance=ExtResource( 5 )]
 position = Vector2( 16, 0 )
+
+[node name="RockGroup2" parent="Ground/YSort" instance=ExtResource( 2 )]
+position = Vector2( 8, -20 )
+
+[node name="Rock2" parent="Ground/YSort/RockGroup2" instance=ExtResource( 3 )]
+position = Vector2( 8, -4 )
+
+[node name="Rock3" parent="Ground/YSort/RockGroup2" instance=ExtResource( 3 )]
+position = Vector2( -8, 4 )
+
+[node name="RockGroup3" parent="Ground/YSort" instance=ExtResource( 2 )]
+position = Vector2( -32, -8 )
+
+[node name="Rock2" parent="Ground/YSort/RockGroup3" instance=ExtResource( 3 )]
+position = Vector2( 8, 4 )
+
+[node name="Rock3" parent="Ground/YSort/RockGroup3" instance=ExtResource( 3 )]
+position = Vector2( 8, -4 )
+
+[node name="Rock4" parent="Ground/YSort/RockGroup3" instance=ExtResource( 3 )]
+position = Vector2( -8, -4 )
+
+[node name="Rock5" parent="Ground/YSort/RockGroup3" instance=ExtResource( 3 )]
+position = Vector2( -8, 4 )
+
+[node name="Rock6" parent="Ground/YSort/RockGroup3" instance=ExtResource( 3 )]
+position = Vector2( -8, 4 )

@@ -44,20 +44,17 @@ func _process(delta):
 
 func process_turn():
 	remove_tiles(dino_previews)
-	remove_tiles(lava_warnings)
 	for dinosaur in dinosaurs:
 		var next_move = calculate_next_move(dinosaur)
-		if next_move:
-			dinosaur.position = next_move
-			# TODO flee nearest lava if exit is inaccessible
-	# TODO split up dino/lava movement timing
+		if next_move != null:
+			dinosaur.global_position = next_move
 	turn_timer = turn_time_seconds
 
 func calculate_lava_spread():
 	var spread_tiles = []
 	var neighbors = []
 	for tile in lava_tiles:
-		var cell = tile_map.world_to_map(tile.position)
+		var cell = tile_map.world_to_map(tile.global_position)
 		var cell_neighbors = get_cell_neighbors(cell.x, cell.y)
 		for neighbor in cell_neighbors:
 			if not neighbor in neighbors:
@@ -75,35 +72,36 @@ func spread_lava():
 	for tile_pos in calculate_lava_spread():
 		var lava_instance = lava_obj.instance()
 		y_sort.add_child(lava_instance)
-		lava_instance.position = tile_pos
+		lava_instance.global_position = tile_pos
 		lava_tiles.append(lava_instance)
 	disable_lava_tiles()
 
 func calculate_next_move(dinosaur):
-	var path = generate_path(dinosaur.position, exit.position)
+	var path = generate_path(dinosaur.global_position, exit.global_position)
 	if path.size() > 1:
 		return tile_map.map_to_world(grid[path[1]])
 
 func end_turn():
 	var dinosaur_map = {}
 	for dinosaur in dinosaurs:
-		if dinosaur.position == exit.position:
+		if dinosaur.global_position == exit.global_position:
 			emit_signal("dino_exited", dinosaur.points)
 			dinosaur.queue_free()
 			dinosaurs.erase(dinosaur)
 		else:
-			var dino_index = tile_position_to_index(dinosaur.position)
+			var dino_index = tile_position_to_index(dinosaur.global_position)
 			if dino_index in dinosaur_map:
 				dinosaur_map[dino_index].append(dinosaur)
 			else:
 				dinosaur_map[dino_index] = [dinosaur]
 	merge_dinos(dinosaur_map)
+	remove_tiles(lava_warnings)
 	spread_lava()
 	check_dino_lives()
 
 func check_dino_lives():
 	for dinosaur in dinosaurs:
-		var dino_index = tile_position_to_index(dinosaur.position)
+		var dino_index = tile_position_to_index(dinosaur.global_position)
 		if dino_index in lava_indices:
 			dinosaur.queue_free()
 			dinosaurs.erase(dinosaur)
@@ -111,7 +109,7 @@ func check_dino_lives():
 func find_safe_space(current_index):
 	var warning_indices = []
 	for tile in lava_warnings:
-		 warning_indices.append(tile_position_to_index(tile.position))
+		 warning_indices.append(tile_position_to_index(tile.global_position))
 
 	var neighbors = astar_grid.get_point_connections(current_index)
 	if not neighbors:
@@ -202,12 +200,12 @@ func preview_next_turn():
 	for tile_pos in calculate_lava_spread():
 		var lava_warning = lava_warning_obj.instance()
 		y_sort.add_child(lava_warning)
-		lava_warning.position = tile_pos
+		lava_warning.global_position = tile_pos
 		lava_warnings.append(lava_warning)
 	var dinosaur_preview_map = {}
 	for dinosaur in dinosaurs:
 		var next_move = calculate_next_move(dinosaur)
-		if not next_move:
+		if next_move == null:
 			continue
 		if next_move in dinosaur_preview_map:
 			dinosaur_preview_map[next_move] += 1
@@ -216,7 +214,7 @@ func preview_next_turn():
 	for next_move in dinosaur_preview_map:
 		var dino_preview = dino_preview_obj.instance()
 		y_sort.add_child(dino_preview)
-		dino_preview.position = next_move
+		dino_preview.global_position = next_move
 		if dinosaur_preview_map[next_move] > 1:
 			dino_preview.get_child(0).texture = group_preview_sprite
 		dino_previews.append(dino_preview)
@@ -238,7 +236,7 @@ func set_up_map():
 	dinosaurs = tree.get_nodes_in_group("dinosaurs")
 	lava_tiles = tree.get_nodes_in_group("lava")
 	rock_tiles = tree.get_nodes_in_group("rocks")
-	exit_index = tile_position_to_index(exit.position)
+	exit_index = tile_position_to_index(exit.global_position)
 	
 	create_astar_grid()
 	disable_lava_tiles()
@@ -247,14 +245,14 @@ func set_up_map():
 
 func disable_lava_tiles():
 	for tile in lava_tiles:
-		var tile_cell = tile_map.world_to_map(tile.position)
+		var tile_cell = tile_map.world_to_map(tile.global_position)
 		var lava_index = map_cell_to_index(tile_cell)
 		lava_indices.append(lava_index)
 		astar_grid.set_point_disabled(lava_index, true)
 
 func disable_rock_tiles():
 	for tile in rock_tiles:
-		var tile_cell = tile_map.world_to_map(tile.position)
+		var tile_cell = tile_map.world_to_map(tile.global_position)
 		var rock_index = map_cell_to_index(tile_cell)
 		rock_indices.append(rock_index)
 		astar_grid.set_point_disabled(rock_index, true)
