@@ -5,7 +5,6 @@ signal dino_exited
 signal level_complete
 signal turn_complete
 
-export var tile_offset = Vector2(0, 4)
 export var turn_time_seconds = 0.25
 
 var turn : int = 0
@@ -58,7 +57,7 @@ func calculate_lava_spread():
 	var spread_tiles = []
 	var neighbors = []
 	for tile in lava_tiles:
-		var cell = tile_map.world_to_map(tile.position - tile_offset)
+		var cell = tile_map.world_to_map(tile.position)
 		var cell_neighbors = get_cell_neighbors(cell.x, cell.y)
 		for neighbor in cell_neighbors:
 			if not neighbor in neighbors:
@@ -68,7 +67,7 @@ func calculate_lava_spread():
 		if neighbor_index in rock_indices or neighbor_index in lava_indices:
 			continue
 		if neighbor_index > 0:
-			var tile_pos = tile_map.map_to_world(neighbor) + tile_offset
+			var tile_pos = tile_map.map_to_world(neighbor)
 			spread_tiles.append(tile_pos)
 	return spread_tiles
 
@@ -83,7 +82,7 @@ func spread_lava():
 func calculate_next_move(dinosaur):
 	var path = generate_path(dinosaur.position, exit.position)
 	if path.size() > 1:
-		return tile_map.map_to_world(grid[path[1]]) + tile_offset
+		return tile_map.map_to_world(grid[path[1]])
 
 func end_turn():
 	var dinosaur_map = {}
@@ -108,19 +107,6 @@ func check_dino_lives():
 		if dino_index in lava_indices:
 			dinosaur.queue_free()
 			dinosaurs.erase(dinosaur)
-
-func find_safe_space(current_index, checked_indices):
-	if not checked_indices:
-		checked_indices = [current_index]
-	var end_point = current_index
-	var connections = astar_grid.get_point_connections(current_index)
-	for connection in connections:
-		if not connection in checked_indices:
-			checked_indices.append(connection)
-			if connection.is_point_disabled():
-				continue
-		end_point = find_safe_space(current_index, checked_indices)
-	return end_point
 
 func merge_dinos(dinosaur_map):
 	for i in dinosaur_map:
@@ -160,6 +146,9 @@ func generate_path(start: Vector2, end: Vector2):
 	var end_index = tile_position_to_index(end)
 	var path = astar_grid.get_id_path(start_index, end_index)
 	if not path:
+#		return find_safe_space(start_index)
+		# TODO decide how to flee lava in a predictable way?
+		# Adjacent space with fewest connections to lava?
 		print("no path from " + str(start) + " to " + str(end))
 	return path
 
@@ -179,14 +168,14 @@ func set_up_map():
 
 func disable_lava_tiles():
 	for tile in lava_tiles:
-		var tile_cell = tile_map.world_to_map(tile.position - tile_offset)
+		var tile_cell = tile_map.world_to_map(tile.position)
 		var lava_index = map_cell_to_index(tile_cell)
 		lava_indices.append(lava_index)
 		astar_grid.set_point_disabled(lava_index, true)
 
 func disable_rock_tiles():
 	for tile in rock_tiles:
-		var tile_cell = tile_map.world_to_map(tile.position - tile_offset)
+		var tile_cell = tile_map.world_to_map(tile.position)
 		var rock_index = map_cell_to_index(tile_cell)
 		rock_indices.append(rock_index)
 		astar_grid.set_point_disabled(rock_index, true)
@@ -205,7 +194,7 @@ func create_astar_grid():
 				astar_grid.connect_points(i, map_cell_to_index(neighbor))
 
 func tile_position_to_index(tile):
-	var tile_cell = tile_map.world_to_map(tile - tile_offset)
+	var tile_cell = tile_map.world_to_map(tile)
 	return map_cell_to_index(tile_cell)
 
 func map_cell_to_index(grid_cell: Vector2):
