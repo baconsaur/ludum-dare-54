@@ -66,7 +66,7 @@ func calculate_lava_spread():
 		var neighbor_index = map_cell_to_index(neighbor)
 		if neighbor_index in rock_indices or neighbor_index in lava_indices:
 			continue
-		if neighbor_index > 0:
+		if neighbor_index >= 0:
 			var tile_pos = tile_map.map_to_world(neighbor)
 			spread_tiles.append(tile_pos)
 	return spread_tiles
@@ -108,6 +108,86 @@ func check_dino_lives():
 			dinosaur.queue_free()
 			dinosaurs.erase(dinosaur)
 
+func find_safe_space(current_index):
+	var warning_indices = []
+	for tile in lava_warnings:
+		 warning_indices.append(tile_position_to_index(tile.position))
+
+	var neighbors = astar_grid.get_point_connections(current_index)
+	if not neighbors:
+		return current_index
+	
+	var neighbor_safe_tiles = {}
+	var neighbor_warning_tiles = {}
+	var neighbor_total_connections = {}
+	for neighbor in neighbors:
+		if astar_grid.is_point_disabled(neighbor):
+				continue
+		# From remaining options, check neighbors' neighbors for clear tiles, lava and lava warnings
+		var neighbor_neighbors = astar_grid.get_point_connections(neighbor)
+		var connection_count = neighbor_neighbors.size()
+		var warning_count = 0
+		var obstacle_count = 0
+		neighbor_total_connections[neighbor] = neighbor_neighbors.size()
+		for next_neighbor in neighbor_neighbors:
+			if next_neighbor in warning_indices:
+				warning_count += 1
+			elif astar_grid.is_point_disabled(neighbor):
+				obstacle_count -= 1
+			neighbor_safe_tiles[neighbor] = connection_count - obstacle_count - warning_count
+			neighbor_warning_tiles[neighbor] = warning_count
+
+	
+	# Prioritize/tie break options in this order:
+	#	1. Most safe adjacent spaces (no warnings or obstacles)
+	var max_safe = neighbor_safe_tiles.values().max()
+	var most_safe_candidates = []
+	for neighbor in neighbor_safe_tiles:
+		if neighbor_safe_tiles[neighbor] < max_safe:
+			neighbor_warning_tiles.erase(neighbor)
+			neighbor_total_connections.erase(neighbor)
+		most_safe_candidates.append(neighbor)
+	if most_safe_candidates.size() == 1:
+		return most_safe_candidates[0]
+		
+	#	2. Fewest adjacent warnings
+	var min_warnings = neighbor_warning_tiles.values().max()
+	var least_warning_candidates = []
+	for neighbor in neighbor_warning_tiles:
+		if neighbor_warning_tiles[neighbor] > min_warnings:
+			neighbor_total_connections.erase(neighbor)
+		least_warning_candidates.append(neighbor)
+	if least_warning_candidates.size() == 1:
+		return least_warning_candidates[0]
+
+	#	3. Most total connections (including obstacles)
+	var max_connections = neighbor_total_connections.values().max()
+	var most_connection_candidates = []
+	for neighbor in neighbor_total_connections:
+		if neighbor_total_connections[neighbor] < max_connections:
+			continue
+		most_connection_candidates.append(neighbor)
+	if most_connection_candidates.size() == 1:
+		return most_connection_candidates[0]
+
+	#	4. Closest to exit
+	var distances = {}
+	for candidate in most_connection_candidates:
+		distances[candidate] = grid[candidate].distance_to(grid[exit_index])
+	var min_distance = distances.values().min()
+
+	var final_candidates = []
+	for neighbor in distances:
+		if distances[neighbor] < min_distance:
+			continue
+		final_candidates.append(neighbor)
+	if final_candidates.size() == 1:
+		return final_candidates[0]
+	
+	#	5. Lowest index (it should never come to this, right? Idk, I'm tired, this whole function is awful, and I probably should be writing tests but on we go)
+	return final_candidates.min()
+
+
 func merge_dinos(dinosaur_map):
 	for i in dinosaur_map:
 		var dinos_at_i = dinosaur_map[i]
@@ -146,10 +226,9 @@ func generate_path(start: Vector2, end: Vector2):
 	var end_index = tile_position_to_index(end)
 	var path = astar_grid.get_id_path(start_index, end_index)
 	if not path:
-#		return find_safe_space(start_index)
-		# TODO decide how to flee lava in a predictable way?
-		# Adjacent space with fewest connections to lava?
-		print("no path from " + str(start) + " to " + str(end))
+		var next_move = find_safe_space(start_index)
+		if next_move != null:
+			return [start_index, next_move]
 	return path
 
 func set_up_map():
