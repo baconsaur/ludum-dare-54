@@ -375,7 +375,6 @@ func highlight_valid_moves():
 
 func is_tile_available(tile):
 	var tile_index = map_cell_to_index(tile)
-	print(tile_index)
 	if tile_index < 0:
 		return false
 	if tile_index == exit_index:
@@ -399,11 +398,25 @@ func place_object(tile):
 func rotate_left():
 	if not selected_object:
 		return
-
-	print("left")
+	rotate_direction(Vector2(-1, 1))
 
 func rotate_right():
 	if not selected_object:
 		return
+	rotate_direction(Vector2(1, -1))
 
-	print("right")
+func rotate_direction(modifier: Vector2):
+	var rocks = selected_object.get_children()
+	enable_rock_tiles(rocks)
+	remove_tiles(available_tiles)
+	var origin = tile_map.world_to_map(selected_object.global_position)
+	var offsets = []
+	for rock in rocks:
+		var map_cell = tile_map.world_to_map(rock.global_position)
+		var map_minus_origin = map_cell - origin
+		var new_cell_pos = Vector2(map_minus_origin.y, map_minus_origin.x) * modifier
+		rock.global_position = tile_map.map_to_world(new_cell_pos + origin)
+		offsets.append(new_cell_pos)
+		selected_object.set_offsets(offsets)
+	highlight_valid_moves()
+	disable_rock_tiles(rocks)
