@@ -19,15 +19,15 @@ func load_level(level_scene):
 	current_level.connect("level_complete", self, "complete_level")
 	current_level.connect("turn_complete", self, "enable_debug_step")
 
-func step_turn():
-	$CanvasLayer/MarginContainer/HBoxContainer/DebugStepTurn.set_disabled(true)
+func skip_turn():
+	$CanvasLayer/MarginContainer/HBoxContainer/SkipTurn.set_disabled(true)
 	current_level.process_turn()
 
 func enable_debug_step():
-	$CanvasLayer/MarginContainer/HBoxContainer/DebugStepTurn.set_disabled(false)
+	$CanvasLayer/MarginContainer/HBoxContainer/SkipTurn.set_disabled(false)
 
-func _on_DebugStepTurn_pressed():
-	step_turn()
+func _on_SkipTurn_pressed():
+	skip_turn()
 
 func complete_level():
 	remove_child(current_level)

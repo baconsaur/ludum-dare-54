@@ -6,6 +6,8 @@ signal level_complete
 signal turn_complete
 
 export var turn_time_seconds = 0.25
+export var tile_offset = + Vector2(0, 4)
+export var snap_tolerance = 4
 
 var turn : int = 0
 var astar_grid : AStar2D
@@ -27,11 +29,17 @@ var dino_indices = []
 var lava_warnings = []
 var group_preview_sprite = preload("res://sprites/dino_preview_group.png")
 var selected_object = null
+var object_preview = null
 var available_tiles = []
+var available_tile_coords = []
+var last_snap = Vector2.ZERO
+var snap_distance = 0
+var hovered_object = null
 
 onready var exit = $Ground/YSort/Exit
 onready var tile_map : TileMap = $Ground
 onready var y_sort = $Ground/YSort
+onready var preview_node = $ObjectPreview
 
 func _ready():
 	set_up_map()
@@ -60,14 +68,22 @@ func _process(delta):
 
 func _unhandled_input(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed:
-		var mouse_pos = get_global_mouse_position() + Vector2(0, 4) # Fuck it
+		if selected_object and event.button_index == BUTTON_RIGHT:
+			deselect_object()
+		var mouse_pos = get_global_mouse_position() + tile_offset
 		var cell_index = tile_position_to_index(mouse_pos)
 		if cell_index < 0 or cell_index in rock_indices or cell_index in lava_indices:
 			return
-		print(cell_index)
+	elif event is InputEventMouseMotion and selected_object and snap_distance > 0:
+		snap_distance -= last_snap.distance_to(event.relative)
+		if snap_distance <= 0:
+			var cursor_tile = tile_map.world_to_map(preview_node.global_position + tile_offset)
+			if not cursor_tile in available_tile_coords:
+				object_preview.preview_mode(preview_node)
 
 func process_turn():
 	remove_tiles(available_tiles)
+	available_tile_coords = []
 	remove_tiles(dino_previews)
 	dino_indices = []
 	for dinosaur in dinosaurs:
@@ -276,6 +292,8 @@ func set_up_map():
 		group.set_offsets(rock_offsets)
 		group.connect("select_group", self, "select_object", [group])
 		group.connect("deselect_group", self, "deselect_object")
+		group.connect("hover_group", self, "hover_object", [group])
+		group.connect("unhover_group", self, "unhover_object")
 	
 	for dinosaur in dinosaurs:
 		dino_indices.append(tile_position_to_index(dinosaur.global_position))
@@ -297,7 +315,8 @@ func disable_rock_tiles(tiles):
 		var tile_cell = tile_map.world_to_map(tile.global_position)
 		var rock_index = map_cell_to_index(tile_cell)
 		rock_indices.append(rock_index)
-		astar_grid.set_point_disabled(rock_index, true)
+		if rock_index > 0:
+			astar_grid.set_point_disabled(rock_index, true)
 
 func enable_rock_tiles(tiles):
 	for tile in tiles:
@@ -339,39 +358,51 @@ func remove_tiles(tiles):
 		tiles.pop_back().queue_free()
 
 func select_object(obj):
+	unhover_object()
 	if selected_object:
 		remove_tiles(available_tiles)
+		available_tile_coords = []
 		selected_object.deselect()
 	obj.select()
 	selected_object = obj
-	highlight_valid_moves()
+	create_object_preview()
+	highlight_valid_moves(selected_object)
 
 func deselect_object():
+	remove_placement_preview()
 	remove_tiles(available_tiles)
+	available_tile_coords = []
 	selected_object.deselect()
 	selected_object = null
 
-func highlight_valid_moves():
-	if not selected_object:
+func highlight_valid_moves(piece):
+	if not piece:
 		return
 	for tile in grid:
-		if not is_tile_available(tile):
+		if not can_piece_fit(piece, tile):
 			continue
-		var no_illegal_parts = true
-		for offset in selected_object.offsets:
-			var offset_tile = tile + offset
-			if not offset_tile in grid:
-				no_illegal_parts = false
-				break
-			if not is_tile_available(offset_tile):
-				no_illegal_parts = false
-				break
-		if no_illegal_parts:
-			var selectable_tile_inst = selectable_tile_tile.instance()
-			selectable_tile_inst.connect("selected", self, "place_object", [tile])
-			y_sort.add_child(selectable_tile_inst)
-			available_tiles.append(selectable_tile_inst)
-			selectable_tile_inst.global_position = tile_map.map_to_world(tile)
+		var selectable_tile_inst = selectable_tile_tile.instance()
+		selectable_tile_inst.connect("selected", self, "place_object", [tile])
+		selectable_tile_inst.connect("hovered", self, "preview_placement", [tile])
+		selectable_tile_inst.connect("unhovered", self, "restore_preview", [tile])
+		y_sort.add_child(selectable_tile_inst)
+		available_tiles.append(selectable_tile_inst)
+		available_tile_coords.append(tile)
+		selectable_tile_inst.global_position = tile_map.map_to_world(tile)
+
+func can_piece_fit(piece, target_tile):
+	if not is_tile_available(target_tile):
+		return false
+	var no_illegal_parts = true
+	for offset in piece.offsets:
+		var offset_tile = target_tile + offset
+		if not offset_tile in grid:
+			no_illegal_parts = false
+			break
+		if not is_tile_available(offset_tile):
+			no_illegal_parts = false
+			break
+	return no_illegal_parts
 
 func is_tile_available(tile):
 	var tile_index = map_cell_to_index(tile)
@@ -385,31 +416,62 @@ func is_tile_available(tile):
 		return false
 	return true
 
-func place_object(tile):
+func preview_placement(tile):
+	if not selected_object:
+		return
+	if not object_preview:
+		return
+	object_preview.place(y_sort, tile_map.map_to_world(tile))
+
+func create_object_preview():
 	if not selected_object:
 		return
 	var rocks = selected_object.get_children()
 	enable_rock_tiles(rocks)
+	object_preview = selected_object.duplicate()
+	y_sort.add_child(object_preview)
+	object_preview.set_preview()
+	object_preview.preview_mode(preview_node)
+
+func restore_preview(tile):
+	if not object_preview:
+		return
+	snap_distance = snap_tolerance
+
+func remove_placement_preview():
+	if object_preview:
+		object_preview.get_parent().remove_child(object_preview)
+		object_preview.queue_free()
+	object_preview = null
+	if selected_object:
+		var rocks = selected_object.get_children()
+		disable_rock_tiles(rocks)
+
+func place_object(tile):
+	if not selected_object and not object_preview:
+		return
+	var rocks = selected_object.get_children()
+	enable_rock_tiles(rocks)
+	for i in range(object_preview.rocks.size()):
+		selected_object.rocks[i].position = object_preview.rocks[i].position
 	selected_object.global_position = tile_map.map_to_world(tile)
 	disable_rock_tiles(rocks)
 	deselect_object()
 	process_turn()
 
 func rotate_left():
-	if not selected_object:
-		return
-	rotate_direction(Vector2(-1, 1))
-
-func rotate_right():
-	if not selected_object:
+	if not object_preview:
 		return
 	rotate_direction(Vector2(1, -1))
 
+func rotate_right():
+	if not object_preview:
+		return
+	rotate_direction(Vector2(-1, 1))
+
 func rotate_direction(modifier: Vector2):
-	var rocks = selected_object.get_children()
-	enable_rock_tiles(rocks)
-	remove_tiles(available_tiles)
-	var origin = tile_map.world_to_map(selected_object.global_position)
+	var rocks = object_preview.get_children()
+	var origin = tile_map.world_to_map(object_preview.global_position)
 	var offsets = []
 	for rock in rocks:
 		var map_cell = tile_map.world_to_map(rock.global_position)
@@ -417,6 +479,22 @@ func rotate_direction(modifier: Vector2):
 		var new_cell_pos = Vector2(map_minus_origin.y, map_minus_origin.x) * modifier
 		rock.global_position = tile_map.map_to_world(new_cell_pos + origin)
 		offsets.append(new_cell_pos)
-		selected_object.set_offsets(offsets)
-	highlight_valid_moves()
-	disable_rock_tiles(rocks)
+		object_preview.set_offsets(offsets)
+	remove_tiles(available_tiles)
+	available_tile_coords = []
+	highlight_valid_moves(object_preview)
+	if not can_piece_fit(object_preview, origin):
+		object_preview.set_invalid()
+		snap_distance = snap_tolerance
+
+func hover_object(obj):
+	if hovered_object or selected_object:
+		return
+	obj.hover()
+	hovered_object = obj
+
+func unhover_object():
+	if not hovered_object:
+		return
+	hovered_object.unhover()
+	hovered_object = null

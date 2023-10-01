@@ -30,17 +30,17 @@ mouse_filter = 2
 size_flags_vertical = 0
 alignment = 1
 
-[node name="DebugStepTurn" type="Button" parent="CanvasLayer/MarginContainer/HBoxContainer"]
-margin_left = 83.0
-margin_right = 153.0
+[node name="SkipTurn" type="Button" parent="CanvasLayer/MarginContainer/HBoxContainer"]
+margin_left = 84.0
+margin_right = 152.0
 margin_bottom = 20.0
-text = "step turn"
+text = "skip turn"
 
 [node name="Score" type="Label" parent="CanvasLayer/MarginContainer/HBoxContainer"]
-margin_left = 157.0
+margin_left = 156.0
 margin_top = 3.0
-margin_right = 165.0
+margin_right = 164.0
 margin_bottom = 17.0
 text = "0"
 
-[connection signal="pressed" from="CanvasLayer/MarginContainer/HBoxContainer/DebugStepTurn" to="." method="_on_DebugStepTurn_pressed"]
+[connection signal="pressed" from="CanvasLayer/MarginContainer/HBoxContainer/SkipTurn" to="." method="_on_SkipTurn_pressed"]
