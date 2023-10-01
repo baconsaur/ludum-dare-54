@@ -1,7 +1,6 @@
 extends Node2D
 
 signal select_group
-signal deselect_group
 signal hover_group
 signal unhover_group
 
@@ -22,13 +21,15 @@ func _ready():
 	for child in children:
 		if child is Area2D:
 			rocks.append(child)
-	recalculate_colliders()
+	add_colliders()
 
-func recalculate_colliders():
+func remove_colliders():
 	for collider in colliders:
 		remove_child(collider)
 		collider.queue_free()
 	colliders = []
+
+func add_colliders():
 	for rock in rocks:
 		var rock_collider = rock.get_node_or_null("CollisionPolygon2D") as CollisionPolygon2D
 		if not rock_collider:
@@ -47,21 +48,34 @@ func _process(delta):
 func set_offsets(offset_coords):
 	offsets = offset_coords
 
-func set_preview():
-	is_preview = true
-	deselect()
-	unhover()
+func set_preview(preview_node):
+	if not is_preview:
+		last_position = position
+		is_preview = true
+		deselect()
+		unhover()
+
 	set_invalid()
+	
+	var parent = get_parent()
+	if parent:
+		parent.remove_child(self)
+	preview_node.add_child(self)
+	position = Vector2.ZERO
 
 func select():
 	if selected:
 		return
+	remove_colliders()
 	selected = true
 	for rock in rocks:
 		rock.modulate = Color(1, 1, 0, 0.5)
 
 func deselect():
+	if not selected:
+		return
 	selected = false
+	add_colliders()
 	if hovered:
 		hover()
 	else:
@@ -96,9 +110,7 @@ func unhover():
 
 func _on_RockGroup_input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton and event.pressed:
-		if selected:
-			emit_signal("deselect_group")
-		else:
+		if not selected:
 			emit_signal("select_group")
 
 func _on_RockGroup_mouse_entered():
@@ -107,18 +119,11 @@ func _on_RockGroup_mouse_entered():
 func _on_RockGroup_mouse_exited():
 	emit_signal("unhover_group")
 
-func preview_mode(preview_node):
-	last_position = position
-	var parent = get_parent()
-	if parent:
-		parent.remove_child(self)
-	preview_node.add_child(self)
-	position = Vector2.ZERO
-
-func place(container, pos):
+func place_preview(container, pos):
 	var parent = get_parent()
 	if parent:
 		parent.remove_child(self)
 	container.add_child(self)
 	position = last_position
 	global_position = pos
+	set_valid()

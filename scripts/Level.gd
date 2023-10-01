@@ -19,6 +19,8 @@ var rock_tiles = []
 var rock_groups = []
 var exit_index = -1
 var rock_indices = []
+var paused_rock_indices = []
+var pending_rock_indices = []
 var lava_obj = preload("res://scenes/Lava.tscn")
 var turn_timer = 0
 var dino_preview_obj = preload("res://scenes/DinoPreview.tscn")
@@ -35,6 +37,7 @@ var available_tile_coords = []
 var last_snap = Vector2.ZERO
 var snap_distance = 0
 var hovered_object = null
+var object_rotations_done = 0
 
 onready var exit = $Ground/YSort/Exit
 onready var tile_map : TileMap = $Ground
@@ -48,12 +51,7 @@ func _process(delta):
 	if turn_timer > 0:
 		turn_timer -= delta
 		if turn_timer <= 0:
-			end_turn()
-			if not dinosaurs or exit_index in lava_indices:
-				emit_signal("level_complete")
-			else:
-				preview_next_turn()
-				emit_signal("turn_complete")
+			finish_turn_processing()
 		return
 	
 	if not selected_object:
@@ -70,20 +68,20 @@ func _unhandled_input(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed:
 		if selected_object and event.button_index == BUTTON_RIGHT:
 			deselect_object()
-		var mouse_pos = get_global_mouse_position() + tile_offset
-		var cell_index = tile_position_to_index(mouse_pos)
-		if cell_index < 0 or cell_index in rock_indices or cell_index in lava_indices:
-			return
-	elif event is InputEventMouseMotion and selected_object and snap_distance > 0:
+	if event is InputEventMouseMotion and selected_object and snap_distance > 0:
 		snap_distance -= last_snap.distance_to(event.relative)
 		if snap_distance <= 0:
 			var cursor_tile = tile_map.world_to_map(preview_node.global_position + tile_offset)
 			if not cursor_tile in available_tile_coords:
-				object_preview.preview_mode(preview_node)
+				object_preview.set_preview(preview_node)
 
-func process_turn():
+func start_turn_processing():
+	# Clean up after player actions
 	remove_tiles(available_tiles)
 	available_tile_coords = []
+	deselect_object()
+
+	# Move dinosaurs
 	remove_tiles(dino_previews)
 	dino_indices = []
 	for dinosaur in dinosaurs:
@@ -91,7 +89,49 @@ func process_turn():
 		if next_move != null:
 			dinosaur.global_position = next_move
 			dino_indices.append(tile_position_to_index(next_move))
+	merge_dinos()
+	
+	# Pause for movement to be displayed
 	turn_timer = turn_time_seconds
+
+func finish_turn_processing():
+	# Move lava
+	remove_tiles(lava_warnings)
+	spread_lava()
+	
+	# Check if dinosaurs should die
+	check_dino_lives()
+	if not dinosaurs or exit_index in lava_indices:
+		emit_signal("level_complete")
+		return
+
+	# Wrap up turn
+	turn += 1
+	preview_next_turn()
+	emit_signal("turn_complete")
+
+func merge_dinos():
+	var dinosaur_map = {}
+	for dinosaur in dinosaurs:
+		if dinosaur.global_position == exit.global_position:
+			emit_signal("dino_exited", dinosaur.points)
+			dinosaur.queue_free()
+			dinosaurs.erase(dinosaur)
+		else:
+			var dino_index = tile_position_to_index(dinosaur.global_position)
+			if dino_index in dinosaur_map:
+				dinosaur_map[dino_index].append(dinosaur)
+			else:
+				dinosaur_map[dino_index] = [dinosaur]
+
+	for i in dinosaur_map:
+		var dinos_at_i = dinosaur_map[i]
+		if dinos_at_i.size() > 1:
+			var first = dinos_at_i.pop_front()
+			for dino in dinos_at_i:
+				first.add_unit(dino)
+				dino.queue_free()
+				dinosaurs.erase(dino)
 
 func calculate_lava_spread():
 	var spread_tiles = []
@@ -123,24 +163,6 @@ func calculate_next_move(dinosaur):
 	var path = generate_path(dinosaur.global_position, exit.global_position)
 	if path.size() > 1:
 		return tile_map.map_to_world(grid[path[1]])
-
-func end_turn():
-	var dinosaur_map = {}
-	for dinosaur in dinosaurs:
-		if dinosaur.global_position == exit.global_position:
-			emit_signal("dino_exited", dinosaur.points)
-			dinosaur.queue_free()
-			dinosaurs.erase(dinosaur)
-		else:
-			var dino_index = tile_position_to_index(dinosaur.global_position)
-			if dino_index in dinosaur_map:
-				dinosaur_map[dino_index].append(dinosaur)
-			else:
-				dinosaur_map[dino_index] = [dinosaur]
-	merge_dinos(dinosaur_map)
-	remove_tiles(lava_warnings)
-	spread_lava()
-	check_dino_lives()
 
 func check_dino_lives():
 	for dinosaur in dinosaurs:
@@ -231,22 +253,15 @@ func find_safe_space(current_index):
 	#	5. Lowest index (it should never come to this, right? Idk, I'm tired, this whole function is awful, and I probably should be writing tests but on we go)
 	return final_candidates.min()
 
-func merge_dinos(dinosaur_map):
-	for i in dinosaur_map:
-		var dinos_at_i = dinosaur_map[i]
-		if dinos_at_i.size() > 1:
-			var first = dinos_at_i.pop_front()
-			for dino in dinos_at_i:
-				first.add_unit(dino)
-				dino.queue_free()
-				dinosaurs.erase(dino)
-
 func preview_next_turn():
+	# Add lava warnings
 	for tile_pos in calculate_lava_spread():
 		var lava_warning = lava_warning_obj.instance()
 		y_sort.add_child(lava_warning)
 		lava_warning.global_position = tile_pos
 		lava_warnings.append(lava_warning)
+	
+	# Add dino movement previews
 	var dinosaur_preview_map = {}
 	for dinosaur in dinosaurs:
 		var next_move = calculate_next_move(dinosaur)
@@ -287,11 +302,10 @@ func set_up_map():
 	for group in rock_groups:
 		var rock_offsets = []
 		var center_rock_cell = tile_map.world_to_map(group.global_position)
-		for child in group.get_children():
-			rock_offsets.append(tile_map.world_to_map(child.global_position) - center_rock_cell)
+		for rock in group.rocks:
+			rock_offsets.append(tile_map.world_to_map(rock.global_position) - center_rock_cell)
 		group.set_offsets(rock_offsets)
 		group.connect("select_group", self, "select_object", [group])
-		group.connect("deselect_group", self, "deselect_object")
 		group.connect("hover_group", self, "hover_object", [group])
 		group.connect("unhover_group", self, "unhover_object")
 	
@@ -315,7 +329,7 @@ func disable_rock_tiles(tiles):
 		var tile_cell = tile_map.world_to_map(tile.global_position)
 		var rock_index = map_cell_to_index(tile_cell)
 		rock_indices.append(rock_index)
-		if rock_index > 0:
+		if rock_index >= 0:
 			astar_grid.set_point_disabled(rock_index, true)
 
 func enable_rock_tiles(tiles):
@@ -323,7 +337,9 @@ func enable_rock_tiles(tiles):
 		var tile_cell = tile_map.world_to_map(tile.global_position)
 		var rock_index = map_cell_to_index(tile_cell)
 		rock_indices.erase(rock_index)
-		astar_grid.set_point_disabled(rock_index, false)
+		if rock_index != exit_index and not rock_index in lava_indices:
+			# Shouldn't happen but I'm short on debugging time so might as well cover my ass
+			astar_grid.set_point_disabled(rock_index, false)
 
 func create_astar_grid():
 	astar_grid = AStar2D.new()
@@ -360,15 +376,26 @@ func remove_tiles(tiles):
 func select_object(obj):
 	unhover_object()
 	if selected_object:
+		# I think this was supposed to be for toggling, not sure if I need it anymore
 		remove_tiles(available_tiles)
 		available_tile_coords = []
 		selected_object.deselect()
+	
 	obj.select()
 	selected_object = obj
+	# Make the old spaces available again
+	enable_rock_tiles(selected_object.rocks)
+	
+	# Display helpers
 	create_object_preview()
 	highlight_valid_moves(selected_object)
+	
+	# Track rotations
+	object_rotations_done = 0
 
 func deselect_object():
+	if not selected_object:
+		return
 	remove_placement_preview()
 	remove_tiles(available_tiles)
 	available_tile_coords = []
@@ -421,17 +448,15 @@ func preview_placement(tile):
 		return
 	if not object_preview:
 		return
-	object_preview.place(y_sort, tile_map.map_to_world(tile))
+	object_preview.place_preview(y_sort, tile_map.map_to_world(tile))
 
 func create_object_preview():
 	if not selected_object:
 		return
-	var rocks = selected_object.get_children()
-	enable_rock_tiles(rocks)
+
 	object_preview = selected_object.duplicate()
 	y_sort.add_child(object_preview)
-	object_preview.set_preview()
-	object_preview.preview_mode(preview_node)
+	object_preview.set_preview(preview_node)
 
 func restore_preview(tile):
 	if not object_preview:
@@ -444,48 +469,70 @@ func remove_placement_preview():
 		object_preview.queue_free()
 	object_preview = null
 	if selected_object:
-		var rocks = selected_object.get_children()
+		var rocks = selected_object.rocks
 		disable_rock_tiles(rocks)
 
 func place_object(tile):
 	if not selected_object and not object_preview:
 		return
-	var rocks = selected_object.get_children()
-	enable_rock_tiles(rocks)
-	for i in range(object_preview.rocks.size()):
-		selected_object.rocks[i].position = object_preview.rocks[i].position
+
+	var original_position = selected_object.global_position
+	
+	var actual_rocks = selected_object.rocks
+	var preview_rocks = object_preview.rocks
+	for i in range(preview_rocks.size()):
+		actual_rocks[i].position = preview_rocks[i].position
 	selected_object.global_position = tile_map.map_to_world(tile)
-	disable_rock_tiles(rocks)
-	deselect_object()
-	process_turn()
+	var final_position = selected_object.global_position
+
+	if object_rotations_done % 4 != 0 or original_position != final_position:
+		# Apologies to everyone who rotates symmetrical pieces then puts them back, I just don't have the time for it
+		start_turn_processing()
+	else:
+		deselect_object()
 
 func rotate_left():
 	if not object_preview:
 		return
 	rotate_direction(Vector2(1, -1))
+	object_rotations_done -= 1
 
 func rotate_right():
 	if not object_preview:
 		return
 	rotate_direction(Vector2(-1, 1))
+	object_rotations_done += 1
 
-func rotate_direction(modifier: Vector2):
-	var rocks = object_preview.get_children()
-	var origin = tile_map.world_to_map(object_preview.global_position)
+func rotate_direction(direction_modifier: Vector2):
+	var rocks = object_preview.rocks
+
+	var start_position = object_preview.global_position
+	var start_origin = tile_map.world_to_map(start_position)
+	
+	# Calculate everything based on the original object's origin for simplicity
+	object_preview.global_position = selected_object.global_position
+	var origin = tile_map.world_to_map(selected_object.global_position)
+
 	var offsets = []
 	for rock in rocks:
 		var map_cell = tile_map.world_to_map(rock.global_position)
 		var map_minus_origin = map_cell - origin
-		var new_cell_pos = Vector2(map_minus_origin.y, map_minus_origin.x) * modifier
+		var new_cell_pos = Vector2(map_minus_origin.y, map_minus_origin.x) * direction_modifier
 		rock.global_position = tile_map.map_to_world(new_cell_pos + origin)
 		offsets.append(new_cell_pos)
 		object_preview.set_offsets(offsets)
+
 	remove_tiles(available_tiles)
 	available_tile_coords = []
+
 	highlight_valid_moves(object_preview)
-	if not can_piece_fit(object_preview, origin):
+	
+	object_preview.global_position = start_position
+	if not can_piece_fit(object_preview, start_origin):
 		object_preview.set_invalid()
 		snap_distance = snap_tolerance
+	else:
+		object_preview.set_valid()
 
 func hover_object(obj):
 	if hovered_object or selected_object:

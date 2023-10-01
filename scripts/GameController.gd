@@ -21,7 +21,7 @@ func load_level(level_scene):
 
 func skip_turn():
 	$CanvasLayer/MarginContainer/HBoxContainer/SkipTurn.set_disabled(true)
-	current_level.process_turn()
+	current_level.start_turn_processing()
 
 func enable_debug_step():
 	$CanvasLayer/MarginContainer/HBoxContainer/SkipTurn.set_disabled(false)
