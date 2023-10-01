@@ -5,7 +5,7 @@
 
 [node name="Dinosaur" type="Node2D" groups=["dinosaurs"]]
 position = Vector2( -32, -4 )
-z_index = 1
+z_index = 2
 script = ExtResource( 2 )
 
 [node name="Sprite" type="Sprite" parent="."]

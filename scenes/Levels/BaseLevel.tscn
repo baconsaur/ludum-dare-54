@@ -1,12 +1,8 @@
-[gd_scene load_steps=10 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://sprites/ground.png" type="Texture" id=1]
-[ext_resource path="res://scenes/RockGroup.tscn" type="PackedScene" id=2]
-[ext_resource path="res://scenes/Rock.tscn" type="PackedScene" id=3]
+[ext_resource path="res://scenes/Exit.tscn" type="PackedScene" id=2]
 [ext_resource path="res://scripts/Level.gd" type="Script" id=4]
-[ext_resource path="res://scenes/Dinosaur.tscn" type="PackedScene" id=5]
-[ext_resource path="res://sprites/exit.png" type="Texture" id=6]
-[ext_resource path="res://scenes/Lava.tscn" type="PackedScene" id=7]
 [ext_resource path="res://scripts/ObjectPreview.gd" type="Script" id=8]
 
 [sub_resource type="TileSet" id=1]
@@ -28,6 +24,9 @@
 [node name="Level" type="Node2D"]
 script = ExtResource( 4 )
 
+[node name="ObjectPreview" type="Node2D" parent="."]
+script = ExtResource( 8 )
+
 [node name="Ground" type="TileMap" parent="."]
 mode = 1
 tile_set = SubResource( 1 )
@@ -35,66 +34,9 @@ cell_size = Vector2( 16, 8 )
 cell_y_sort = true
 centered_textures = true
 format = 1
-tile_data = PoolIntArray( -196612, 0, 0, -196611, 0, 0, -196610, 0, 0, -196609, 0, 0, -262144, 0, 0, -262143, 0, 0, -262142, 0, 0, -262141, 0, 0, -131076, 0, 0, -131075, 0, 0, -131074, 0, 0, -131073, 0, 0, -196608, 0, 0, -196607, 0, 0, -196606, 0, 0, -196605, 0, 0, -65540, 0, 0, -65539, 0, 0, -65538, 0, 0, -65537, 0, 0, -131072, 0, 0, -131071, 0, 0, -131070, 0, 0, -131069, 0, 0, -4, 0, 0, -3, 0, 0, -2, 0, 0, -1, 0, 0, -65536, 0, 0, -65535, 0, 0, -65534, 0, 0, -65533, 0, 0, 65532, 0, 0, 65533, 0, 0, 65534, 0, 0, 65535, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0, 131068, 0, 0, 131069, 0, 0, 131070, 0, 0, 131071, 0, 0, 65536, 0, 0, 65537, 0, 0, 65538, 0, 0, 65539, 0, 0, 196604, 0, 0, 196605, 0, 0, 196606, 0, 0, 196607, 0, 0, 131072, 0, 0, 131073, 0, 0, 131074, 0, 0, 131075, 0, 0 )
+tile_data = PoolIntArray( -65538, 0, 0, -65537, 0, 0, -131072, 0, 0, -131071, 0, 0, -131070, 0, 0, -2, 0, 0, -1, 0, 0, -65536, 0, 0, -65535, 0, 0, -65534, 0, 0, 65534, 0, 0, 65535, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 131070, 0, 0, 131071, 0, 0, 65536, 0, 0, 65537, 0, 0, 65538, 0, 0, 196606, 0, 0, 196607, 0, 0, 131072, 0, 0, 131073, 0, 0, 131074, 0, 0 )
 
 [node name="YSort" type="YSort" parent="Ground"]
 
-[node name="Dinosaur2" parent="Ground/YSort" instance=ExtResource( 5 )]
-position = Vector2( 32, 0 )
-
-[node name="Dinosaur5" parent="Ground/YSort" instance=ExtResource( 5 )]
-position = Vector2( -8, -4 )
-
-[node name="Lava" parent="Ground/YSort" instance=ExtResource( 7 )]
-position = Vector2( 24, -12 )
-
-[node name="Exit" type="Node2D" parent="Ground/YSort"]
-position = Vector2( 8, 12 )
-
-[node name="Sprite" type="Sprite" parent="Ground/YSort/Exit"]
-texture = ExtResource( 6 )
-
-[node name="Lava2" parent="Ground/YSort" instance=ExtResource( 7 )]
-position = Vector2( -8, -12 )
-
-[node name="Dinosaur3" parent="Ground/YSort" instance=ExtResource( 5 )]
-position = Vector2( 0, -32 )
-
-[node name="Dinosaur4" parent="Ground/YSort" instance=ExtResource( 5 )]
-position = Vector2( 16, 0 )
-
-[node name="RockGroup4" parent="Ground/YSort" instance=ExtResource( 2 )]
-position = Vector2( 8, -20 )
-
-[node name="Rock2" parent="Ground/YSort/RockGroup4" instance=ExtResource( 3 )]
-position = Vector2( -8, 4 )
-
-[node name="Rock3" parent="Ground/YSort/RockGroup4" instance=ExtResource( 3 )]
-position = Vector2( 8, -4 )
-
-[node name="RockGroup2" parent="Ground/YSort" instance=ExtResource( 2 )]
-position = Vector2( -32, -8 )
-
-[node name="Rock2" parent="Ground/YSort/RockGroup2" instance=ExtResource( 3 )]
-position = Vector2( -8, -4 )
-
-[node name="Rock3" parent="Ground/YSort/RockGroup2" instance=ExtResource( 3 )]
-position = Vector2( -8, 4 )
-
-[node name="Rock4" parent="Ground/YSort/RockGroup2" instance=ExtResource( 3 )]
-position = Vector2( 8, -4 )
-
-[node name="Rock5" parent="Ground/YSort/RockGroup2" instance=ExtResource( 3 )]
-position = Vector2( 8, 4 )
-
-[node name="RockGroup" parent="Ground/YSort" instance=ExtResource( 2 )]
-position = Vector2( 8, 4 )
-
-[node name="Rock2" parent="Ground/YSort/RockGroup" instance=ExtResource( 3 )]
-position = Vector2( -8, 4 )
-
-[node name="Rock3" parent="Ground/YSort/RockGroup" instance=ExtResource( 3 )]
-position = Vector2( 8, 4 )
-
-[node name="ObjectPreview" type="Node2D" parent="."]
-script = ExtResource( 8 )
+[node name="Exit" parent="Ground/YSort" instance=ExtResource( 2 )]
+position = Vector2( 0, 16 )

@@ -4,6 +4,8 @@ extends Node2D
 signal dino_exited
 signal level_complete
 signal turn_complete
+signal object_selected
+signal object_deselected
 
 export var turn_time_seconds = 0.25
 export var tile_offset = + Vector2(0, 4)
@@ -260,6 +262,7 @@ func preview_next_turn():
 		y_sort.add_child(lava_warning)
 		lava_warning.global_position = tile_pos
 		lava_warnings.append(lava_warning)
+		astar_grid.set_point_weight_scale(tile_position_to_index(tile_pos), 2)
 	
 	# Add dino movement previews
 	var dinosaur_preview_map = {}
@@ -392,6 +395,7 @@ func select_object(obj):
 	
 	# Track rotations
 	object_rotations_done = 0
+	emit_signal("object_selected")
 
 func deselect_object():
 	if not selected_object:
@@ -401,6 +405,7 @@ func deselect_object():
 	available_tile_coords = []
 	selected_object.deselect()
 	selected_object = null
+	emit_signal("object_deselected")
 
 func highlight_valid_moves(piece):
 	if not piece:
