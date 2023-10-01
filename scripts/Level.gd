@@ -12,17 +12,22 @@ var astar_grid : AStar2D
 var dinosaurs = []
 var grid = []
 var lava_tiles = []
-var rock_tiles = []
 var lava_indices = []
+var rock_tiles = []
+var rock_groups = []
 var exit_index = -1
 var rock_indices = []
 var lava_obj = preload("res://scenes/Lava.tscn")
 var turn_timer = 0
 var dino_preview_obj = preload("res://scenes/DinoPreview.tscn")
 var lava_warning_obj = preload("res://scenes/LavaWarning.tscn")
+var selectable_tile_tile = preload("res://scenes/SelectableTile.tscn")
 var dino_previews = []
+var dino_indices = []
 var lava_warnings = []
 var group_preview_sprite = preload("res://sprites/dino_preview_group.png")
+var selected_object = null
+var available_tiles = []
 
 onready var exit = $Ground/YSort/Exit
 onready var tile_map : TileMap = $Ground
@@ -41,13 +46,35 @@ func _process(delta):
 			else:
 				preview_next_turn()
 				emit_signal("turn_complete")
+		return
+	
+	if not selected_object:
+		return
+		
+	if Input.is_action_just_pressed("deselect"):
+		deselect_object()
+	elif Input.is_action_just_pressed("left"):
+		rotate_left()
+	elif Input.is_action_just_pressed("right"):
+		rotate_right()
+
+func _unhandled_input(event: InputEvent):
+	if event is InputEventMouseButton and event.pressed:
+		var mouse_pos = get_global_mouse_position() + Vector2(0, 4) # Fuck it
+		var cell_index = tile_position_to_index(mouse_pos)
+		if cell_index < 0 or cell_index in rock_indices or cell_index in lava_indices:
+			return
+		print(cell_index)
 
 func process_turn():
+	remove_tiles(available_tiles)
 	remove_tiles(dino_previews)
+	dino_indices = []
 	for dinosaur in dinosaurs:
 		var next_move = calculate_next_move(dinosaur)
 		if next_move != null:
 			dinosaur.global_position = next_move
+			dino_indices.append(tile_position_to_index(next_move))
 	turn_timer = turn_time_seconds
 
 func calculate_lava_spread():
@@ -115,6 +142,10 @@ func find_safe_space(current_index):
 	if not neighbors:
 		return current_index
 	
+	# Include the option to stay put if it's the safest spot
+	if not current_index in warning_indices:
+		neighbors.append(current_index)
+	
 	var neighbor_safe_tiles = {}
 	var neighbor_warning_tiles = {}
 	var neighbor_total_connections = {}
@@ -134,7 +165,6 @@ func find_safe_space(current_index):
 				obstacle_count -= 1
 			neighbor_safe_tiles[neighbor] = connection_count - obstacle_count - warning_count
 			neighbor_warning_tiles[neighbor] = warning_count
-
 	
 	# Prioritize/tie break options in this order:
 	#	1. Most safe adjacent spaces (no warnings or obstacles)
@@ -185,7 +215,6 @@ func find_safe_space(current_index):
 	#	5. Lowest index (it should never come to this, right? Idk, I'm tired, this whole function is awful, and I probably should be writing tests but on we go)
 	return final_candidates.min()
 
-
 func merge_dinos(dinosaur_map):
 	for i in dinosaur_map:
 		var dinos_at_i = dinosaur_map[i]
@@ -231,16 +260,29 @@ func generate_path(start: Vector2, end: Vector2):
 
 func set_up_map():
 	grid = tile_map.get_used_cells()
+	exit_index = tile_position_to_index(exit.global_position)
 	
 	var tree = get_tree()
 	dinosaurs = tree.get_nodes_in_group("dinosaurs")
 	lava_tiles = tree.get_nodes_in_group("lava")
 	rock_tiles = tree.get_nodes_in_group("rocks")
-	exit_index = tile_position_to_index(exit.global_position)
+	rock_groups = tree.get_nodes_in_group("rock_groups")
+	
+	for group in rock_groups:
+		var rock_offsets = []
+		var center_rock_cell = tile_map.world_to_map(group.global_position)
+		for child in group.get_children():
+			rock_offsets.append(tile_map.world_to_map(child.global_position) - center_rock_cell)
+		group.set_offsets(rock_offsets)
+		group.connect("select_group", self, "select_object", [group])
+		group.connect("deselect_group", self, "deselect_object")
+	
+	for dinosaur in dinosaurs:
+		dino_indices.append(tile_position_to_index(dinosaur.global_position))
 	
 	create_astar_grid()
 	disable_lava_tiles()
-	disable_rock_tiles()
+	disable_rock_tiles(rock_tiles)
 	preview_next_turn()
 
 func disable_lava_tiles():
@@ -250,12 +292,19 @@ func disable_lava_tiles():
 		lava_indices.append(lava_index)
 		astar_grid.set_point_disabled(lava_index, true)
 
-func disable_rock_tiles():
-	for tile in rock_tiles:
+func disable_rock_tiles(tiles):
+	for tile in tiles:
 		var tile_cell = tile_map.world_to_map(tile.global_position)
 		var rock_index = map_cell_to_index(tile_cell)
 		rock_indices.append(rock_index)
 		astar_grid.set_point_disabled(rock_index, true)
+
+func enable_rock_tiles(tiles):
+	for tile in tiles:
+		var tile_cell = tile_map.world_to_map(tile.global_position)
+		var rock_index = map_cell_to_index(tile_cell)
+		rock_indices.erase(rock_index)
+		astar_grid.set_point_disabled(rock_index, false)
 
 func create_astar_grid():
 	astar_grid = AStar2D.new()
@@ -288,3 +337,73 @@ func get_cell_neighbors(x, y):
 func remove_tiles(tiles):
 	for i in range(tiles.size()):
 		tiles.pop_back().queue_free()
+
+func select_object(obj):
+	if selected_object:
+		remove_tiles(available_tiles)
+		selected_object.deselect()
+	obj.select()
+	selected_object = obj
+	highlight_valid_moves()
+
+func deselect_object():
+	remove_tiles(available_tiles)
+	selected_object.deselect()
+	selected_object = null
+
+func highlight_valid_moves():
+	if not selected_object:
+		return
+	for tile in grid:
+		if not is_tile_available(tile):
+			continue
+		var no_illegal_parts = true
+		for offset in selected_object.offsets:
+			var offset_tile = tile + offset
+			if not offset_tile in grid:
+				no_illegal_parts = false
+				break
+			if not is_tile_available(offset_tile):
+				no_illegal_parts = false
+				break
+		if no_illegal_parts:
+			var selectable_tile_inst = selectable_tile_tile.instance()
+			selectable_tile_inst.connect("selected", self, "place_object", [tile])
+			y_sort.add_child(selectable_tile_inst)
+			available_tiles.append(selectable_tile_inst)
+			selectable_tile_inst.global_position = tile_map.map_to_world(tile)
+
+func is_tile_available(tile):
+	var tile_index = map_cell_to_index(tile)
+	print(tile_index)
+	if tile_index < 0:
+		return false
+	if tile_index == exit_index:
+		return false
+	if (tile_index in lava_indices) or (tile_index in rock_indices) or (tile_index in dino_indices):
+		return false
+	if astar_grid.is_point_disabled(tile_index):
+		return false
+	return true
+
+func place_object(tile):
+	if not selected_object:
+		return
+	var rocks = selected_object.get_children()
+	enable_rock_tiles(rocks)
+	selected_object.global_position = tile_map.map_to_world(tile)
+	disable_rock_tiles(rocks)
+	deselect_object()
+	process_turn()
+
+func rotate_left():
+	if not selected_object:
+		return
+
+	print("left")
+
+func rotate_right():
+	if not selected_object:
+		return
+
+	print("right")

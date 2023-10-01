@@ -3,8 +3,7 @@
 [ext_resource path="res://scenes/Rock.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/RockGroup.gd" type="Script" id=2]
 
-[node name="RockGroup" type="Node2D" groups=["rocks"]]
-z_index = 1
+[node name="RockGroup" type="Node2D" groups=["rock_groups"]]
 script = ExtResource( 2 )
 
 [node name="Rock" parent="." instance=ExtResource( 1 )]
