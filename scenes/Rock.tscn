@@ -1,11 +1,17 @@
-[gd_scene load_steps=2 format=2]
+[gd_scene load_steps=4 format=2]
 
-[ext_resource path="res://sprites/rock.png" type="Texture" id=1]
+[ext_resource path="res://materials/RockMaterial.tres" type="Material" id=1]
+[ext_resource path="res://scripts/Rock.gd" type="Script" id=2]
+
+[sub_resource type="StreamTexture" id=3]
+load_path = "res://.import/rock.png-df3db6a52b5550609cfe72347aaf985f.stex"
 
 [node name="Rock" type="Area2D" groups=["rocks"]]
+script = ExtResource( 2 )
 
 [node name="Sprite" type="Sprite" parent="."]
-texture = ExtResource( 1 )
+material = ExtResource( 1 )
+texture = SubResource( 3 )
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
 z_index = 2

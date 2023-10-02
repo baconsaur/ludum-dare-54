@@ -53,8 +53,9 @@ func set_preview(preview_node):
 	if not is_preview:
 		last_position = position
 		is_preview = true
-		deselect()
-		unhover()
+		for rock in rocks:
+			rock.make_unique()
+			rock.modulate.a = 1
 
 	set_invalid()
 	
@@ -70,36 +71,40 @@ func select():
 	remove_colliders()
 	selected = true
 	for rock in rocks:
-		rock.modulate = Color(1, 1, 0, 0.5)
+		rock.set_outline(true, Color(1, 1, 0, 1))
+		rock.modulate.a = 0.5
 
 func deselect():
 	if not selected:
 		return
 	selected = false
 	add_colliders()
-	if hovered:
+	if hovered and not is_preview:
 		hover()
-	else:
-		for rock in rocks:
-			rock.modulate = Color(1, 1, 1, 1)
+		return
+	for rock in rocks:
+		rock.set_outline(false ,Color(1, 1, 1, 1))
+		rock.modulate.a = 1
 
 func set_valid():
 	if not is_preview:
 		return
 	for rock in rocks:
-		rock.modulate = Color(1, 1, 0, 1)
+		rock.set_outline(true, Color(0, 1, 0, 1))
+		rock.modulate = Color(0, 1, 0)
 
 func set_invalid():
 	if not is_preview:
 		return
 	for rock in rocks:
-		rock.modulate = Color(1, 0, 0, 0.75)
+		rock.set_outline(true, Color(1, 0, 0))
+		rock.modulate = Color(1, 0, 0)
 
 func hover():
 	if selected:
 		return
 	for rock in rocks:
-		rock.modulate = Color(0, 1, 1, 1)
+		rock.set_outline(true, Color(1, 1, 0, 1))
 	hovered = true
 
 func unhover():
@@ -107,7 +112,7 @@ func unhover():
 		return
 	hovered = false
 	for rock in rocks:
-		rock.modulate = Color(1, 1, 1, 1)
+		rock.set_outline(false, Color(1, 1, 1, 1))
 
 func _on_RockGroup_input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton and event.pressed and event.button_index == BUTTON_LEFT:
