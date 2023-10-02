@@ -34,6 +34,7 @@ onready var master_sound = AudioServer.get_bus_index("Master")
 func _ready():
 	if test_level:
 		load_level(test_level)
+		tutorial_container.visible = false
 	else:
 		load_level(levels[0])
 
@@ -71,6 +72,8 @@ func load_level(level_scene):
 	reset_button.set_disabled(true)
 
 func skip_turn():
+	if not is_instance_valid(current_level):
+		return
 	skip_turn_button.set_disabled(true)
 	current_level.start_turn_processing()
 
@@ -119,6 +122,7 @@ func next_level():
 	else:
 		total_score = 0
 		level_index = 0
+		score_label.text = str(total_score)
 	load_level(levels[level_index])
 
 func restart_current_level():

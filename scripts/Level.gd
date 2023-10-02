@@ -464,12 +464,9 @@ func remove_tiles(tiles):
 		tiles.pop_back().queue_free()
 
 func select_object(obj):
-	unhover_object()
 	if selected_object:
-		# I think this was supposed to be for toggling, not sure if I need it anymore
-		remove_tiles(available_tiles)
-		available_tile_coords = []
-		selected_object.deselect()
+		return
+	unhover_object()
 	
 	obj.select()
 	selected_object = obj
