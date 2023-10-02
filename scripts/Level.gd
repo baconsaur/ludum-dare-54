@@ -6,6 +6,7 @@ signal level_complete
 signal turn_complete
 signal object_selected
 signal object_deselected
+signal rotated
 
 export var turn_time_seconds = 0.25
 export var tile_offset = + Vector2(0, 4)
@@ -43,6 +44,9 @@ var object_rotations_done = 0
 var burn_particles = preload("res://scenes/BurnParticles.tscn")
 var group_particles = preload("res://scenes/GroupParticles.tscn")
 var beam_particles = preload("res://scenes/BeamParticles.tscn")
+var is_level_complete = false
+var exit_destroyed = false
+var exit_countdown = 0.5
 
 onready var exit = $Ground/YSort/Exit
 onready var tile_map : TileMap = $Ground
@@ -57,6 +61,14 @@ func _ready():
 	set_up_map()
 
 func _process(delta):
+	if is_level_complete:
+		if exit_countdown > 0:
+			exit_countdown -= delta
+			return
+		emit_signal("level_complete", exit_destroyed)
+		queue_free()
+		return
+	
 	if turn_timer > 0:
 		turn_timer -= delta
 		if turn_timer <= 0:
@@ -68,16 +80,18 @@ func _process(delta):
 		
 	if Input.is_action_just_pressed("deselect"):
 		deselect_object()
-	elif Input.is_action_just_pressed("left"):
+	elif Input.is_action_just_released("rotate_left"):
+		emit_signal("rotated")
 		rotate_left()
-	elif Input.is_action_just_pressed("right"):
+	elif Input.is_action_just_released("rotate_right"):
+		emit_signal("rotated")
 		rotate_right()
 
 func _unhandled_input(event: InputEvent):
 	if event is InputEventMouseButton and event.pressed:
 		if selected_object and event.button_index == BUTTON_RIGHT:
 			deselect_object()
-	if event is InputEventMouseMotion and selected_object and snap_distance > 0:
+	elif event is InputEventMouseMotion and selected_object and snap_distance > 0:
 		snap_distance -= last_snap.distance_to(event.relative)
 		if snap_distance <= 0:
 			var cursor_tile = tile_map.world_to_map(preview_node.global_position + tile_offset)
@@ -111,12 +125,14 @@ func finish_turn_processing():
 	# Check if dinosaurs should die
 	check_dino_lives()
 	if not dinosaurs:
-		emit_signal("level_complete")
+		is_level_complete = true
 		return
 	# End level if the exit is gone
 	if exit_index in lava_indices:
+		exit.destroy()
+		exit_destroyed = true
 		fail_sound.play()
-		emit_signal("level_complete")
+		is_level_complete = true
 		return
 
 	# Wrap up turn

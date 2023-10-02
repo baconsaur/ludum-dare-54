@@ -7,7 +7,7 @@ signal unhovered
 
 
 func _on_SelectableTile_input_event(viewport, event, shape_idx):
-	if event is InputEventMouseButton and event.pressed:
+	if event is InputEventMouseButton and event.pressed and event.button_index == BUTTON_LEFT:
 		emit_signal("selected")
 
 func _on_SelectableTile_mouse_entered():

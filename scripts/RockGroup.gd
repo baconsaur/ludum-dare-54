@@ -109,7 +109,7 @@ func unhover():
 		rock.modulate = Color(1, 1, 1, 1)
 
 func _on_RockGroup_input_event(viewport, event, shape_idx):
-	if event is InputEventMouseButton and event.pressed:
+	if event is InputEventMouseButton and event.pressed and event.button_index == BUTTON_LEFT:
 		if not selected:
 			emit_signal("select_group")
 

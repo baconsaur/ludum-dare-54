@@ -61,6 +61,7 @@ alignment = 1
 [node name="AudioToggle" type="Button" parent="CanvasLayer/MarginContainer/Actions/LevelActions"]
 margin_right = 213.0
 margin_bottom = 16.0
+focus_mode = 0
 size_flags_horizontal = 3
 custom_fonts/font = SubResource( 2 )
 custom_styles/hover = SubResource( 3 )
@@ -75,6 +76,7 @@ icon = ExtResource( 13 )
 margin_left = 217.0
 margin_right = 248.0
 margin_bottom = 16.0
+focus_mode = 0
 custom_fonts/font = SubResource( 2 )
 custom_styles/hover = SubResource( 3 )
 custom_styles/pressed = SubResource( 3 )
@@ -105,6 +107,7 @@ alignment = 1
 margin_left = 86.0
 margin_right = 102.0
 margin_bottom = 16.0
+focus_mode = 0
 custom_fonts/font = SubResource( 2 )
 custom_styles/hover = SubResource( 3 )
 custom_styles/pressed = SubResource( 3 )
@@ -118,6 +121,7 @@ icon = ExtResource( 7 )
 margin_left = 106.0
 margin_right = 122.0
 margin_bottom = 16.0
+focus_mode = 0
 custom_fonts/font = SubResource( 2 )
 custom_styles/hover = SubResource( 3 )
 custom_styles/pressed = SubResource( 3 )
@@ -131,6 +135,7 @@ icon = ExtResource( 9 )
 margin_left = 126.0
 margin_right = 142.0
 margin_bottom = 16.0
+focus_mode = 0
 custom_fonts/font = SubResource( 2 )
 custom_styles/hover = SubResource( 3 )
 custom_styles/pressed = SubResource( 3 )
@@ -144,6 +149,7 @@ icon = ExtResource( 8 )
 margin_left = 146.0
 margin_right = 162.0
 margin_bottom = 16.0
+focus_mode = 0
 custom_fonts/font = SubResource( 2 )
 custom_styles/hover = SubResource( 3 )
 custom_styles/pressed = SubResource( 3 )
@@ -153,6 +159,7 @@ custom_styles/normal = SubResource( 3 )
 icon = ExtResource( 10 )
 
 [node name="Tutorial" type="Control" parent="CanvasLayer"]
+modulate = Color( 1, 1, 1, 0.701961 )
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
@@ -222,6 +229,70 @@ text = "Cancel or Rotate selection
 
 "
 align = 1
+
+[node name="Part3" type="Control" parent="CanvasLayer/Tutorial"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/Tutorial/Part3"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+custom_constants/margin_right = 10
+custom_constants/margin_left = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Tutorial/Part3/MarginContainer"]
+margin_left = 10.0
+margin_right = 246.0
+margin_bottom = 144.0
+mouse_filter = 2
+alignment = 1
+
+[node name="KeyControls" type="Label" parent="CanvasLayer/Tutorial/Part3/MarginContainer/VBoxContainer"]
+margin_top = 24.0
+margin_right = 236.0
+margin_bottom = 119.0
+custom_fonts/font = SubResource( 4 )
+text = "Keyboard Controls
+
+Space: Skip turn
+A and D: Rotate
+Esc: Cancel move
+R: Reset level
+"
+
+[node name="Part4" type="Control" parent="CanvasLayer/Tutorial"]
+visible = false
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/Tutorial/Part4"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+custom_constants/margin_right = 10
+custom_constants/margin_left = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Tutorial/Part4/MarginContainer"]
+margin_left = 10.0
+margin_right = 246.0
+margin_bottom = 144.0
+mouse_filter = 2
+alignment = 1
+
+[node name="MouseControls" type="Label" parent="CanvasLayer/Tutorial/Part4/MarginContainer/VBoxContainer"]
+margin_top = 38.0
+margin_right = 236.0
+margin_bottom = 105.0
+custom_fonts/font = SubResource( 4 )
+text = "Mouse Controls
+
+Middle: Skip turn
+Wheel: Rotate
+Right: Cancel move"
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
 stream = ExtResource( 12 )
