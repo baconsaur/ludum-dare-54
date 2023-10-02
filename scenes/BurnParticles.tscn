@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=2]
+
+[sub_resource type="Curve" id=2]
+_data = [ Vector2( 0, 1 ), 0.0, 1.29254, 0, 0, Vector2( 1, 0.288288 ), 0.0, 0.0, 0, 0 ]
+
+[sub_resource type="Gradient" id=1]
+offsets = PoolRealArray( 0, 0.351955, 0.75419, 0.78534 )
+colors = PoolColorArray( 0.759741, 0.373522, 0.129829, 1, 0.36521, 0.26306, 0.244244, 0.815686, 0.578125, 0.578125, 0.578125, 0, 0.320312, 0.320312, 0.320312, 0 )
+
+[node name="BurnParticles" type="CPUParticles2D"]
+z_index = 5
+amount = 50
+lifetime = 0.5
+explosiveness = 0.36
+emission_shape = 1
+emission_sphere_radius = 3.5
+direction = Vector2( 0, -1 )
+gravity = Vector2( 0, 25 )
+initial_velocity = 55.04
+initial_velocity_random = 1.0
+linear_accel_random = 1.0
+damping = 36.69
+damping_random = 1.0
+scale_amount_curve = SubResource( 2 )
+color_ramp = SubResource( 1 )

@@ -40,11 +40,18 @@ var last_snap = Vector2.ZERO
 var snap_distance = 0
 var hovered_object = null
 var object_rotations_done = 0
+var burn_particles = preload("res://scenes/BurnParticles.tscn")
+var group_particles = preload("res://scenes/GroupParticles.tscn")
+var beam_particles = preload("res://scenes/BeamParticles.tscn")
 
 onready var exit = $Ground/YSort/Exit
 onready var tile_map : TileMap = $Ground
 onready var y_sort = $Ground/YSort
 onready var preview_node = $ObjectPreview
+onready var burn_sound = $BurnSound
+onready var group_sound = $GroupSound
+onready var exit_sound = $ExitSound
+onready var fail_sound = $FailSound
 
 func _ready():
 	set_up_map()
@@ -103,7 +110,12 @@ func finish_turn_processing():
 	
 	# Check if dinosaurs should die
 	check_dino_lives()
-	if not dinosaurs or exit_index in lava_indices:
+	if not dinosaurs:
+		emit_signal("level_complete")
+		return
+	# End level if the exit is gone
+	if exit_index in lava_indices:
+		fail_sound.play()
 		emit_signal("level_complete")
 		return
 
@@ -115,25 +127,42 @@ func finish_turn_processing():
 func merge_dinos():
 	var dinosaur_map = {}
 	for dinosaur in dinosaurs:
-		if dinosaur.global_position == exit.global_position:
-			emit_signal("dino_exited", dinosaur.points)
-			dinosaur.queue_free()
-			dinosaurs.erase(dinosaur)
+		var dino_index = tile_position_to_index(dinosaur.global_position)
+		if dino_index in dinosaur_map:
+			dinosaur_map[dino_index].append(dinosaur)
 		else:
-			var dino_index = tile_position_to_index(dinosaur.global_position)
-			if dino_index in dinosaur_map:
-				dinosaur_map[dino_index].append(dinosaur)
-			else:
-				dinosaur_map[dino_index] = [dinosaur]
+			dinosaur_map[dino_index] = [dinosaur]
 
+	var dinos_merged = false
 	for i in dinosaur_map:
 		var dinos_at_i = dinosaur_map[i]
 		if dinos_at_i.size() > 1:
+			var group_particles_inst = group_particles.instance()
+			add_child(group_particles_inst)
+			group_particles_inst.global_position = dinos_at_i[0].global_position
+			group_particles_inst.emitting = true
+			dinos_merged = true
 			var first = dinos_at_i.pop_front()
 			for dino in dinos_at_i:
 				first.add_unit(dino)
 				dino.queue_free()
 				dinosaurs.erase(dino)
+	if dinos_merged:
+		group_sound.play()
+	
+	var dino_exited = false
+	for dinosaur in dinosaurs:
+		if dinosaur.global_position == exit.global_position:
+			dino_exited = true
+			emit_signal("dino_exited", dinosaur.points)
+			dinosaur.queue_free()
+			dinosaurs.erase(dinosaur)
+	if dino_exited:
+		exit_sound.play()
+		var exit_particles = beam_particles.instance()
+		add_child(exit_particles)
+		exit_particles.global_position = exit.global_position
+		exit_particles.emitting = true
 
 func calculate_lava_spread():
 	var spread_tiles = []
@@ -167,11 +196,19 @@ func calculate_next_move(dinosaur):
 		return tile_map.map_to_world(grid[path[1]])
 
 func check_dino_lives():
+	var dino_died = false
 	for dinosaur in dinosaurs:
 		var dino_index = tile_position_to_index(dinosaur.global_position)
 		if dino_index in lava_indices:
+			dino_died = true
+			var smoke = burn_particles.instance()
+			add_child(smoke)
+			smoke.global_position = dinosaur.global_position
+			smoke.emitting = true
 			dinosaur.queue_free()
 			dinosaurs.erase(dinosaur)
+	if dino_died:
+		burn_sound.play()
 
 func find_safe_space(current_index):
 	var warning_indices = []

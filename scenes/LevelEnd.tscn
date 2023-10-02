@@ -47,14 +47,6 @@ text = "Total Score: 0"
 align = 1
 valign = 1
 
-[node name="Retry" type="Button" parent="MarginContainer/VBoxContainer"]
-margin_left = 97.0
-margin_top = 108.0
-margin_right = 142.0
-margin_bottom = 128.0
-size_flags_horizontal = 4
-text = "Retry"
-
 [node name="NextLevel" type="Button" parent="MarginContainer/VBoxContainer"]
 visible = false
 margin_left = 80.0
@@ -64,5 +56,13 @@ margin_bottom = 128.0
 size_flags_horizontal = 4
 text = "Next Level"
 
-[connection signal="pressed" from="MarginContainer/VBoxContainer/Retry" to="." method="_on_Retry_pressed"]
+[node name="Retry" type="Button" parent="MarginContainer/VBoxContainer"]
+margin_left = 97.0
+margin_top = 108.0
+margin_right = 142.0
+margin_bottom = 128.0
+size_flags_horizontal = 4
+text = "Retry"
+
 [connection signal="pressed" from="MarginContainer/VBoxContainer/NextLevel" to="." method="_on_NextLevel_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/Retry" to="." method="_on_Retry_pressed"]
