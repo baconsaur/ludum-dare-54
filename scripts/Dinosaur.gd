@@ -15,3 +15,4 @@ func add_unit(unit : Dinosaur):
 		is_group = true
 	
 	group_size += unit.group_size
+	points += unit.points * group_size

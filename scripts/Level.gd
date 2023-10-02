@@ -154,7 +154,7 @@ func merge_dinos():
 	for dinosaur in dinosaurs:
 		if dinosaur.global_position == exit.global_position:
 			dino_exited = true
-			emit_signal("dino_exited", dinosaur.points)
+			emit_signal("dino_exited", dinosaur.points, dinosaur.group_size)
 			dinosaur.queue_free()
 			dinosaurs.erase(dinosaur)
 	if dino_exited:

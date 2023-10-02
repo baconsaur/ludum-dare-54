@@ -5,16 +5,20 @@ export(Array, PackedScene) var levels = []
 
 var level_score = 0
 var total_score = 0
+var saved_dinos = 0
 var current_level : Level = null
 var level_end_obj = preload("res://scenes/LevelEnd.tscn")
 var level_index = 0
+var tutorial_step = 0
 
 onready var score_label = $CanvasLayer/MarginContainer/Actions/LevelActions/Score
-onready var skip_turn_button = $CanvasLayer/MarginContainer/Actions/LevelActions/SkipTurn
+onready var skip_turn_button = $CanvasLayer/MarginContainer/Actions/MoveActions/SkipTurn
 onready var cancel_button = $CanvasLayer/MarginContainer/Actions/MoveActions/Cancel
 onready var rotate_l_button = $CanvasLayer/MarginContainer/Actions/MoveActions/RotateL
 onready var rotate_r_button = $CanvasLayer/MarginContainer/Actions/MoveActions/RotateR
 onready var ui_container = $CanvasLayer/MarginContainer
+onready var tutorial1 = $CanvasLayer/Tutorial/Part1
+onready var tutorial2 = $CanvasLayer/Tutorial/Part2
 
 
 func _ready():
@@ -29,13 +33,15 @@ func load_level(level_scene):
 		current_level.queue_free()
 	
 	level_score = 0
+	saved_dinos = 0
 	var level_instance = level_scene.instance()
 	current_level = level_instance
 	add_child(level_instance)
 	
 	current_level.connect("dino_exited", self, "increase_score")
 	current_level.connect("level_complete", self, "complete_level")
-	current_level.connect("turn_complete", self, "enable_skip_turn")
+	current_level.connect("object_selected", self, "tutorial_progress")
+	current_level.connect("turn_complete", self, "complete_turn")
 	current_level.connect("object_selected", self, "enable_object_controls")
 	current_level.connect("object_deselected", self, "disable_object_controls")
 	
@@ -47,6 +53,17 @@ func skip_turn():
 
 func enable_skip_turn():
 	skip_turn_button.set_disabled(false)
+
+func complete_turn():
+	enable_skip_turn()
+	
+	if tutorial_step == 0:
+		tutorial1.visible = false
+		tutorial2.visible = true
+		tutorial_step +=1
+	elif tutorial_step == 1:
+		tutorial2.visible = false
+		tutorial_step +=1
 
 func enable_object_controls():
 	rotate_l_button.set_disabled(false)
@@ -69,8 +86,9 @@ func complete_level():
 	level_end.connect("next_level", self, "next_level")
 	if level_score > 0:
 		level_end.enable_next_level()
+		level_end.set_header("Saved " + str(saved_dinos) + " dinosaurs")
 	else:
-		level_end.set_header("You Failed")
+		level_end.set_header("All the dinosaurs died")
 
 func next_level():
 	if level_index < levels.size() - 1:
@@ -84,7 +102,8 @@ func restart_current_level():
 	else:
 		load_level(levels[level_index])
 
-func increase_score(points):
+func increase_score(points, dino_count):
+	saved_dinos += dino_count
 	level_score += points
 	total_score += points
 	score_label.text = str(level_score)
@@ -100,3 +119,10 @@ func _on_RotateL_pressed():
 
 func _on_RotateR_pressed():
 	current_level.rotate_right()
+
+func tutorial_progress():
+	if tutorial_step > 0:
+		return
+	tutorial1.visible = false
+	tutorial2.visible = true
+	tutorial_step = 1
