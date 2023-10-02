@@ -91,9 +91,6 @@ func disable_object_controls():
 	rotate_r_button.set_disabled(true)
 	cancel_button.set_disabled(true)
 
-func _on_SkipTurn_pressed():
-	skip_turn()
-
 func complete_level(exit_destroyed):
 	tutorial_container.visible = false
 	
@@ -135,7 +132,7 @@ func increase_score(points, dino_count):
 	saved_dinos += dino_count
 	level_score += points
 	total_score += points
-	score_label.text = str(level_score)
+	score_label.text = str(total_score)
 
 func _on_Restart_pressed():
 	tutorial_progress()
@@ -152,6 +149,10 @@ func _on_RotateL_pressed():
 func _on_RotateR_pressed():
 	tutorial_progress()
 	current_level.rotate_right()
+
+func _on_SkipTurn_pressed():
+	tutorial_progress()
+	skip_turn()
 
 func rotation_tutorial():
 	if tutorial_step == 1:

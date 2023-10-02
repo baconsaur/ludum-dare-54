@@ -47,6 +47,8 @@ var beam_particles = preload("res://scenes/BeamParticles.tscn")
 var is_level_complete = false
 var exit_destroyed = false
 var exit_countdown = 0.5
+var last_dino_paths = {}
+var temp_dino_path = []
 
 onready var exit = $Ground/YSort/Exit
 onready var tile_map : TileMap = $Ground
@@ -103,7 +105,8 @@ func start_turn_processing():
 	remove_tiles(available_tiles)
 	available_tile_coords = []
 	deselect_object()
-
+	hide_dino_path()
+	
 	# Move dinosaurs
 	remove_tiles(dino_previews)
 	dino_indices = []
@@ -207,7 +210,8 @@ func spread_lava():
 	disable_lava_tiles()
 
 func calculate_next_move(dinosaur):
-	var path = generate_path(dinosaur.global_position, exit.global_position)
+	var path = generate_path(dinosaur.global_position, exit.global_position) as Array
+	last_dino_paths[dinosaur] = path
 	if path.size() > 1:
 		return tile_map.map_to_world(grid[path[1]])
 
@@ -366,12 +370,42 @@ func set_up_map():
 		group.connect("unhover_group", self, "unhover_object")
 	
 	for dinosaur in dinosaurs:
+		dinosaur.connect("mouse_entered", self, "show_dino_path", [dinosaur])
+		dinosaur.connect("mouse_exited", self, "hide_dino_path", [dinosaur])
 		dino_indices.append(tile_position_to_index(dinosaur.global_position))
 	
 	create_astar_grid()
 	disable_lava_tiles()
 	disable_rock_tiles(rock_tiles)
 	preview_next_turn()
+
+func show_dino_path(dinosaur):
+	if selected_object:
+		return
+	if temp_dino_path:
+		hide_dino_path()
+	dinosaur.toggle_score()
+	if dinosaur in last_dino_paths:
+		var path = last_dino_paths[dinosaur]
+		if path.size() < 2:
+			return
+		var i = 1
+		var preview_length = path.size() - 1
+		for step in path.slice(2, path.size() - 1):
+			var dino_preview = dino_preview_obj.instance()
+			y_sort.add_child(dino_preview)
+			dino_preview.global_position = tile_map.map_to_world(grid[step])
+			temp_dino_path.append(dino_preview)
+			dino_preview.modulate.a = float(preview_length - i) / preview_length
+			print(dino_preview.modulate)
+			i += 1
+
+func hide_dino_path(dinosaur=null):
+	if not selected_object and dinosaur:
+		dinosaur.toggle_score()
+	for tile in temp_dino_path:
+		tile.queue_free()
+	temp_dino_path = []
 
 func disable_lava_tiles():
 	for tile in lava_tiles:
