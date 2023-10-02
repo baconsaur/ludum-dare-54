@@ -31,12 +31,13 @@ group_size = 2
 
 [node name="Sprite" parent="Ground/YSort/Sauropod" index="0"]
 animation = "group"
-frame = 5
+frame = 3
 
 [node name="RockGroup" parent="Ground/YSort" index="5" instance=ExtResource( 4 )]
 position = Vector2( 8, -4 )
 
-[node name="Rock2" parent="Ground/YSort/RockGroup" index="1" instance=ExtResource( 5 )]
+[node name="Rock2" parent="Ground/YSort/RockGroup/YSort" index="0" instance=ExtResource( 5 )]
 position = Vector2( 8, 4 )
 
 [editable path="Ground/YSort/Sauropod"]
+[editable path="Ground/YSort/RockGroup"]

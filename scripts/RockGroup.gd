@@ -15,9 +15,10 @@ var colliders = []
 var rocks = []
 
 onready var last_position =  position
+onready var y_sort = $YSort
 
 func _ready():
-	var children = get_children()
+	var children = y_sort.get_children()
 	for child in children:
 		if child is Area2D:
 			rocks.append(child)

@@ -20,14 +20,17 @@ position = Vector2( 32, 0 )
 [node name="RockGroup" parent="Ground/YSort" index="4" instance=ExtResource( 4 )]
 position = Vector2( 0, 8 )
 
-[node name="Rock2" parent="Ground/YSort/RockGroup" index="1" instance=ExtResource( 5 )]
+[node name="Rock2" parent="Ground/YSort/RockGroup/YSort" index="1" instance=ExtResource( 5 )]
 position = Vector2( 8, 4 )
 
-[node name="Rock3" parent="Ground/YSort/RockGroup" index="2" instance=ExtResource( 5 )]
+[node name="Rock3" parent="Ground/YSort/RockGroup/YSort" index="2" instance=ExtResource( 5 )]
 position = Vector2( -8, 4 )
 
 [node name="RockGroup2" parent="Ground/YSort" index="5" instance=ExtResource( 4 )]
 position = Vector2( 8, -12 )
 
-[node name="Rock3" parent="Ground/YSort/RockGroup2" index="1" instance=ExtResource( 5 )]
+[node name="Rock3" parent="Ground/YSort/RockGroup2/YSort" index="1" instance=ExtResource( 5 )]
 position = Vector2( -8, -4 )
+
+[editable path="Ground/YSort/RockGroup"]
+[editable path="Ground/YSort/RockGroup2"]
