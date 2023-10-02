@@ -10,8 +10,12 @@ var current_level : Level = null
 var level_end_obj = preload("res://scenes/LevelEnd.tscn")
 var level_index = 0
 var tutorial_step = 0
+var audio_off_icon = preload("res://sprites/audio_off.png")
+var audio_on_icon = preload("res://sprites/audio_on.png")
 
 onready var score_label = $CanvasLayer/MarginContainer/Actions/LevelActions/Score
+onready var audio_toggle = $CanvasLayer/MarginContainer/Actions/LevelActions/AudioToggle
+onready var reset_button = $CanvasLayer/MarginContainer/Actions/LevelActions/Restart
 onready var skip_turn_button = $CanvasLayer/MarginContainer/Actions/MoveActions/SkipTurn
 onready var cancel_button = $CanvasLayer/MarginContainer/Actions/MoveActions/Cancel
 onready var rotate_l_button = $CanvasLayer/MarginContainer/Actions/MoveActions/RotateL
@@ -19,6 +23,7 @@ onready var rotate_r_button = $CanvasLayer/MarginContainer/Actions/MoveActions/R
 onready var ui_container = $CanvasLayer/MarginContainer
 onready var tutorial1 = $CanvasLayer/Tutorial/Part1
 onready var tutorial2 = $CanvasLayer/Tutorial/Part2
+onready var master_sound = AudioServer.get_bus_index("Master")
 
 
 func _ready():
@@ -26,6 +31,10 @@ func _ready():
 		load_level(test_level)
 	else:
 		load_level(levels[0])
+
+func _process(delta):
+	if Input.is_action_just_pressed("skip_turn") and not skip_turn_button.disabled:
+		skip_turn()
 
 func load_level(level_scene):
 	if current_level:
@@ -46,6 +55,7 @@ func load_level(level_scene):
 	current_level.connect("object_deselected", self, "disable_object_controls")
 	
 	enable_skip_turn()
+	reset_button.set_disabled(true)
 
 func skip_turn():
 	skip_turn_button.set_disabled(true)
@@ -56,6 +66,7 @@ func enable_skip_turn():
 
 func complete_turn():
 	enable_skip_turn()
+	reset_button.set_disabled(false)
 	
 	if tutorial_step == 0:
 		tutorial1.visible = false
@@ -86,9 +97,15 @@ func complete_level():
 	level_end.connect("next_level", self, "next_level")
 	if level_score > 0:
 		level_end.enable_next_level()
-		level_end.set_header("Saved " + str(saved_dinos) + " dinosaurs")
+		var header = "Saved " + str(saved_dinos) + " dinosaur"
+		if saved_dinos != 1:
+			header += "s"
+		level_end.set_header(header)
 	else:
 		level_end.set_header("All the dinosaurs died")
+	
+	if tutorial2.visible:
+		tutorial2.visible = false
 
 func next_level():
 	if level_index < levels.size() - 1:
@@ -126,3 +143,12 @@ func tutorial_progress():
 	tutorial1.visible = false
 	tutorial2.visible = true
 	tutorial_step = 1
+
+
+func _on_AudioToggle_toggled(button_pressed):
+	if button_pressed:
+		audio_toggle.icon = audio_off_icon
+		AudioServer.set_bus_mute(master_sound, true)
+	else:
+		audio_toggle.icon = audio_on_icon
+		AudioServer.set_bus_mute(master_sound, false)
